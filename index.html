@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b10">
+<title>SoundTune</title>
+<style>
+:root{color-scheme:dark;--bg:#080b10;--panel:#111722;--muted:#8b96a8;--line:#263244;--accent:#b7ff38;--text:#f3f6fb}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#26351a 0,#080b10 48%);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif;padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom));}
+main{max-width:760px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;padding:18px 2px 22px}.brand{font-size:23px;font-weight:800;letter-spacing:-.8px}.brand span{color:var(--accent)}.tag{font-size:11px;color:var(--muted);letter-spacing:1.5px}
+.panel{background:linear-gradient(145deg,#151e2b,#0e141d);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 12px 36px #0005}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.muted{color:var(--muted)}.small{font-size:12px}.device{font-weight:700;font-size:17px;margin:5px 0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f2bd4b;margin-right:7px}
+button,.filelabel{border:1px solid #344256;background:#1b2635;color:var(--text);border-radius:12px;padding:11px 14px;font-weight:650;font-size:13px;cursor:pointer}.primary{background:var(--accent);border-color:var(--accent);color:#10150a}.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.presets button{padding:12px 5px}.presets button.active{background:var(--accent);color:#10150a;border-color:var(--accent)}
+h2{font-size:16px;margin:0 0 5px}.sub{font-size:12px;color:var(--muted);margin-bottom:16px}.bands{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:7px;margin:14px 0 4px}.band{text-align:center;min-width:0}.band input{appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:26px;height:142px;accent-color:var(--accent)}.band .hz{font-size:10px;color:var(--muted);white-space:nowrap}.band .db{font-size:10px;color:var(--accent);margin-top:5px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:14px}.control{background:#0b111a;border:1px solid var(--line);border-radius:14px;padding:12px}.control label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px}.control input{width:100%;accent-color:var(--accent)}
+.player{display:flex;gap:12px;align-items:center;margin-top:14px}.cover{width:54px;height:54px;border-radius:13px;background:linear-gradient(135deg,#34451d,#141d29);display:grid;place-items:center;font-size:24px}.track{min-width:0;flex:1}.track strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.track small{color:var(--muted)}audio{width:100%;margin-top:14px;height:36px}
+input[type=file]{display:none}.note{font-size:11px;color:var(--muted);line-height:1.5}.profilelist{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.profilelist button{padding:8px 10px}.statuspill{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:6px 9px;color:var(--muted)}.footer{text-align:center;color:#657184;font-size:11px;padding:10px}
+@media(max-width:420px){.bands{gap:2px}.band input{height:126px;width:22px}.band .hz{font-size:9px}.band .db{font-size:9px}.panel{padding:15px}}
+</style>
+</head>
+<body><main>
+<header class="top"><div><div class="brand">SOUND<span>TUNE</span></div><div class="tag">PERSONAL AUDIO STUDIO</div></div><div class="tag">BETA · 01</div></header>
+<section class="panel">
+ <div class="row"><div><div class="small muted">OUTPUT DEVICE</div><div class="device">Bluetooth speaker</div><div class="small muted"><span class="dot"></span><span id="deviceStatus">Connect Xiaomi Sound Outdoor in Android Bluetooth settings</span></div></div><button id="check">Refresh</button></div>
+ <p class="note" style="margin:14px 0 0">Connect your Xiaomi speaker from Android Bluetooth settings. Speaker battery and internal DSP are not exposed by a public control interface.</p>
+</section>
+<section class="panel">
+ <div class="row"><div><h2>Sound profile</h2><div class="sub" style="margin:3px 0 0">Choose a starting point, then fine-tune</div></div><button id="reset">Reset</button></div>
+ <div class="presets" id="presets">
+  <button data-p="flat" class="active">Balanced</button><button data-p="bass">Deep Bass</button><button data-p="vocal">Vocal</button><button data-p="rock">Rock</button><button data-p="edm">EDM</button><button data-p="movie">Movie</button>
+ </div>
+</section>
+<section class="panel">
+ <div class="row"><div><h2>10-band equalizer</h2><div class="sub" style="margin:3px 0 0">Adjust each frequency · ±12 dB</div></div><button id="save">Save profile</button></div>
+ <div class="bands" id="bands"></div>
+ <div class="row small muted"><span>−12 dB</span><span>0 dB</span><span>+12 dB</span></div>
+ <div class="controls" style="margin-top:18px">
+  <div class="control"><label><span>Bass boost</span><b id="bassVal">0%</b></label><input id="bass" type="range" min="0" max="100" value="0"></div>
+  <div class="control"><label><span>Treble</span><b id="trebleVal">0 dB</b></label><input id="treble" type="range" min="-6" max="6" value="0"></div>
+  <div class="control"><label><span>Output level</span><b id="gainVal">80%</b></label><input id="gain" type="range" min="10" max="100" value="80"></div>
+  <div class="control"><label><span>Android output EQ</span><b id="nativeState">Off</b></label><button id="nativeToggle" style="width:100%">Try system EQ</button></div>
+ </div>
+ <p class="note" id="nativeNote" style="margin:12px 0 0">Optional: attempts Android output-mix EQ. Android/device firmware may block global effects; if unavailable, the in-app player EQ still works.</p>
+</section>
+<section class="panel">
+ <div class="row"><div><h2>Music player</h2><div class="sub" style="margin:3px 0 0">Choose an audio file stored on your phone</div></div><label class="filelabel primary" for="file">＋ Choose audio</label><input id="file" type="file" accept="audio/*"></div>
+ <div class="player"><div class="cover">♫</div><div class="track"><strong id="trackName">No track selected</strong><small>Audio is processed by SoundTune</small></div></div>
+ <audio id="audio" controls></audio>
+ <p class="note">Keep this page open during playback. For best results, connect your Xiaomi speaker before pressing play. Some browsers may restrict background playback.</p>
+</section>
+<section class="panel"><div class="row"><div><h2>My profiles</h2><div class="sub" style="margin:3px 0 0">Saved locally on this phone</div></div><button id="saveProfile">＋ Save current</button></div><div class="profilelist" id="profileList"></div></section>
+<div class="footer">SOUNDTUNE · PERSONAL AUDIO STUDIO · Audio stays on your device</div>
+</main>
+<script>
+const freqs=[60,120,250,500,1000,2000,4000,8000,12000,16000];
+const names=['60','120','250','500','1k','2k','4k','8k','12k','16k'];
+const presets={
+ flat:[0,0,0,0,0,0,0,0,0,0],
+ bass:[5,4,3,1,0,-1,-1,0,1,1],
+ vocal:[-2,-1,0,2,4,3,1,1,0,-1],
+ rock:[3,2,-1,-2,1,2,3,4,3,2],
+ edm:[5,4,2,0,-1,1,3,4,3,2],
+ movie:[3,2,0,2,3,2,1,2,1,0]
+};
+let ctx=null, source=null, filters=[], master=null, bassFilter=null, trebleFilter=null, current='flat', nativeEnabled=false;
+const audio=document.getElementById('audio');
+const bandHost=document.getElementById('bands');
+freqs.forEach((f,i)=>{
+ const el=document.createElement('div');el.className='band';
+ el.innerHTML=`<div class="hz">${names[i]}</div><input aria-label="${f} Hz" type="range" min="-12" max="12" step="1" value="0" data-i="${i}"><div class="db" id="db${i}">0 dB</div>`;
+ bandHost.appendChild(el);
+});
+function ensureAudio(){
+ if(ctx)return;
+ ctx=new (window.AudioContext||window.webkitAudioContext)();
+ source=ctx.createMediaElementSource(audio);
+ filters=freqs.map((f,i)=>{const n=ctx.createBiquadFilter();n.type=i===0?'lowshelf':i===9?'highshelf':'peaking';n.frequency.value=f;n.Q.value=1;return n});
+ master=ctx.createGain();bassFilter=ctx.createBiquadFilter();bassFilter.type='lowshelf';bassFilter.frequency.value=90;trebleFilter=ctx.createBiquadFilter();trebleFilter.type='highshelf';trebleFilter.frequency.value=6000;
+ source.connect(filters[0]);filters.forEach((n,i)=>{if(filters[i+1])n.connect(filters[i+1]);});
+ filters[filters.length-1].connect(bassFilter);bassFilter.connect(trebleFilter);trebleFilter.connect(master);master.connect(ctx.destination);
+ applyGain();
+}
+function applyGain(){if(master)master.gain.value=Number(document.getElementById('gain').value)/100;}
+function applyPreset(name){current=name;document.querySelectorAll('[data-p]').forEach(b=>b.classList.toggle('active',b.dataset.p===name));document.querySelectorAll('.band input').forEach((el,i)=>{el.value=presets[name][i];applyBand(i,el.value)});}
+function applyBand(i,v){if(filters[i])filters[i].gain.value=Number(v);document.getElementById('db'+i).textContent=(v>0?'+':'')+v+' dB';if(nativeEnabled&&window.SoundTuneAndroid)SoundTuneAndroid.setSystemBand(i,Number(v));}
+document.querySelectorAll('.band input').forEach(el=>el.addEventListener('input',()=>{ensureAudio();applyBand(Number(el.dataset.i),el.value);current='custom';document.querySelectorAll('[data-p]').forEach(b=>b.classList.remove('active'));}));
+document.querySelectorAll('[data-p]').forEach(b=>b.addEventListener('click',()=>{ensureAudio();applyPreset(b.dataset.p)}));
+document.getElementById('reset').onclick=()=>{ensureAudio();applyPreset('flat');document.getElementById('bass').value=0;document.getElementById('bassVal').textContent='0%';bassFilter.gain.value=0};
+document.getElementById('bass').oninput=e=>{ensureAudio();const v=Number(e.target.value);bassFilter.gain.value=v*0.12;document.getElementById('bassVal').textContent=v+'%'};
+document.getElementById('treble').oninput=e=>{ensureAudio();trebleFilter.gain.value=Number(e.target.value);document.getElementById('trebleVal').textContent=e.target.value+' dB'};
+document.getElementById('gain').oninput=e=>{ensureAudio();applyGain();document.getElementById('gainVal').textContent=e.target.value+'%'};
+document.getElementById('file').onchange=e=>{const f=e.target.files[0];if(!f)return;audio.src=URL.createObjectURL(f);document.getElementById('trackName').textContent=f.name;};
+audio.onplay=()=>{ensureAudio();if(ctx.state==='suspended')ctx.resume()};
+document.getElementById('save').onclick=saveCurrent;
+function readProfile(){return {values:[...document.querySelectorAll('.band input')].map(x=>Number(x.value)),bass:Number(document.getElementById('bass').value),treble:Number(document.getElementById('treble').value),gain:Number(document.getElementById('gain').value)}}
+function applyProfile(p){ensureAudio();p.values.forEach((v,i)=>{const el=document.querySelector('.band input[data-i=\"'+i+'\"]');el.value=v;applyBand(i,v)});document.getElementById('bass').value=p.bass||0;document.getElementById('bassVal').textContent=(p.bass||0)+'%';bassFilter.gain.value=(p.bass||0)*.12;document.getElementById('treble').value=p.treble||0;document.getElementById('trebleVal').textContent=(p.treble||0)+' dB';trebleFilter.gain.value=p.treble||0;document.getElementById('gain').value=p.gain||80;document.getElementById('gainVal').textContent=(p.gain||80)+'%';applyGain();current='custom';document.querySelectorAll('[data-p]').forEach(b=>b.classList.remove('active'));}
+function allProfiles(){try{return JSON.parse(localStorage.getItem('soundtune-profiles')||'{}')}catch(e){return {}}}
+function renderProfiles(){const host=document.getElementById('profileList');host.innerHTML='';Object.keys(allProfiles()).forEach(name=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>applyProfile(allProfiles()[name]);host.appendChild(b);const d=document.createElement('button');d.textContent='×';d.title='Delete '+name;d.onclick=()=>{const a=allProfiles();delete a[name];localStorage.setItem('soundtune-profiles',JSON.stringify(a));renderProfiles()};host.appendChild(d)});if(!host.children.length)host.innerHTML='<span class=\"note\">No saved profiles yet.</span>'}
+function saveCurrent(){const name=prompt('Name this sound profile:','My sound');if(!name||!name.trim())return;const p=allProfiles();p[name.trim()]=readProfile();localStorage.setItem('soundtune-profiles',JSON.stringify(p));renderProfiles()}
+document.getElementById('saveProfile').onclick=saveCurrent;
+document.getElementById('nativeToggle').onclick=()=>{if(!window.SoundTuneAndroid){alert('Android EQ is available only in the installed app.');return}const result=SoundTuneAndroid.enableSystemEqualizer();if(result.startsWith('AVAILABLE')){nativeEnabled=true;document.getElementById('nativeState').textContent='On';document.getElementById('nativeNote').textContent='Android output EQ enabled where supported. This may affect other apps too.';document.querySelectorAll('.band input').forEach((el,i)=>SoundTuneAndroid.setSystemBand(i,Number(el.value)));}else{nativeEnabled=false;document.getElementById('nativeState').textContent='Unsupported';document.getElementById('nativeNote').textContent='This phone firmware blocked global output EQ ('+result+'). In-app player EQ remains available.'}};
+document.getElementById('check').onclick=()=>alert('Connect Xiaomi Sound Outdoor using Android Quick Settings → Bluetooth / Media output. This browser app cannot reliably read Bluetooth device details.');
+applyPreset('flat');
+const saved=localStorage.getItem('soundtune-profile');if(saved){try{const p=JSON.parse(saved);document.querySelectorAll('.band input').forEach((el,i)=>{el.value=p.values[i];});document.getElementById('bass').value=p.bass;document.getElementById('gain').value=p.gain;document.getElementById('bassVal').textContent=p.bass+'%';document.getElementById('gainVal').textContent=p.gain+'%';document.querySelectorAll('.band input').forEach((el,i)=>applyBand(i,el.value));}catch(e){}}
+renderProfiles();
+if(window.SoundTuneAndroid)document.getElementById('deviceStatus').textContent='App running on '+SoundTuneAndroid.getPlatform()+' · connect speaker in Quick Settings';
+</script></body></html>
